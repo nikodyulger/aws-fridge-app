@@ -57,7 +57,7 @@ Resources:
     DependsOn: ArtifactStoreBucket
     Properties:
       Name: !Sub ${AppName}-cicd-pipeline
-      RoleArn: !GetAtt Pipelinerole.Arn
+      RoleArn: !GetAtt CICDPipelineRole.Arn
       ArtifactStore:
         Location: !Ref ArtifactStoreBucket
         Type: S3
@@ -143,6 +143,61 @@ Resources:
             Type: string
             Value: !GetAtt ECR.RepositoryUri
       TimeoutInMinutes: 10
+
+
+  CICDPipelineRole:
+    Type: AWS::IAM::Role
+    Description: !Sub 'CodePipelineRole for ${AppName}'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepileine.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodePipeline
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codepipeline:StartPipelineExecution
+                  - codepipeline:GetPipeline
+                  - codepipeline:GetPipelineState
+                  - codepipeline:GetPipelineExecution
+                  - codepipeline:ListPipelineExecutions
+                Resource: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS:AccountId}:${CICDPipeline}
+        - PolicyName: CodePipeline-CodeBuild
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: codebuild:StartBuild
+                Resource: 
+                  - !Sub arn:${AWS::Partition}::${AWS::Region}:${AWS:AccountId}:project/${CodeTest}
+                  - !Sub arn:${AWS::Partition}::${AWS::Region}:${AWS:AccountId}:project/${CodeBuild}
+        - PolicyName: CodePipeline-S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: !GetAtt ArtifactStoreBucket.Arn
+        - PolicyName: CodePipeline-GitHubConnection
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: codestar-connections:UseConnection
+                Resource: !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
 
 Outputs:
   ECRUri:
