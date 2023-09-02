@@ -101,3 +101,45 @@ Resources:
               InputArtifacts:
                 - Name: SourceOutput
               RunOrder: 3
+
+  CodeTest:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${AppName}-cicd-test
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-test.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+      TimeoutInMinutes: 10
+
+  CodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${AppName}-cicd-build
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-build.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Type: String
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Type: String
+            Value: !Ref AWS::AccountId
+          - Name: ECR_URI
+            Type: string
+            Value: !GetAtt ECR.RepositoryUri
+      TimeoutInMinutes: 10
