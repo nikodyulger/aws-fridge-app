@@ -71,3 +71,19 @@ Resources:
           InstanceRoleArn: !Ref AppRunnerRole.Arn
           Memory: 
             !Select [1, !Split [',', !Ref InstanceConfiguration] ]
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamoTable
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S 
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: name
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
