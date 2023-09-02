@@ -51,3 +51,53 @@ Resources:
       BucketName: !Sub ${AppName}_artifactstore_bucket
       VersioningConfiguration:
         Status: Enabled
+
+  CICDPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn: ArtifactStoreBucket
+    Properties:
+      Name: !Sub ${AppName}-cicd-pipeline
+      RoleArn: !GetAtt Pipelinerole.Arn
+      ArtifactStore:
+        Location: !Ref ArtifactStoreBucket
+        Type: S3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              Configuration:
+                ConnectionArn: !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
+                FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}/${AppName}
+                BranchName: master
+              OutputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 1
+        - Name: Test and Build
+          Actions:
+            - Name: Test
+              ActionTypeId:
+                Category: Test
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref CodeTest
+              InputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 2
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref CodeBuild
+              InputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 3
