@@ -143,3 +143,10 @@ Resources:
             Type: string
             Value: !GetAtt ECR.RepositoryUri
       TimeoutInMinutes: 10
+
+Outputs:
+  ECRUri:
+    Description: ECR Repository URI
+    Value: !GetAtt ECR.RepositoryUri
+    Export:
+      Name: !Sub ecr-${AppName}
