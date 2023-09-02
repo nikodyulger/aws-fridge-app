@@ -1,0 +1,37 @@
+Description: Create a Docker CI/CD pipeline with CodePipeline, CodeBuild and ECR
+
+Parameters:
+
+  AppName:
+    Description: Choose the name for the app
+    Type: String
+    Default: fridge_app
+
+  AWSGitHubConnection:
+    Description: GitHub AWS connection created previously as it requires manual authentication process
+    Type: String
+    Default: aws_github_connection
+
+  GitHubOwner:
+    Description: The owner of the GitHub repo
+    Type: String
+    Default: nikodyulger
+
+  GitHubRepo:
+    Description: The GitHub repository name
+    Type: String
+    Default: aws_fridge_app
+
+  Metadata:
+    AWS::CloudFormation::Interface:
+      ParameterGroups:
+        - Label:
+            default: "CodePipeline Settings"
+          Parameters:
+            - AppName
+            - AWSGitHubConnection
+        - Label:
+            default: "GitHub Settings"
+          Parameters:
+            - GitHubOwner
+            - GitHubRepo
