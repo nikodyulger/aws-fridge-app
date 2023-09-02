@@ -35,3 +35,19 @@ Parameters:
           Parameters:
             - GitHubOwner
             - GitHubRepo
+
+Resources:
+
+  ECR: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      RepositoryName: !Ref AppName
+      ImageScanningConfiguration: 
+        ScanOnPush: true
+
+  ArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AppName}_artifactstore_bucket
+      VersioningConfiguration:
+        Status: Enabled
