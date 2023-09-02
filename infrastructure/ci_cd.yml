@@ -1,11 +1,11 @@
-Description: Create a Docker CI/CD pipeline with CodePipeline, CodeBuild and ECR
+Description: "Create a Docker CI/CD pipeline with CodePipeline, CodeBuild and ECR"
 
 Parameters:
 
   AppName:
     Description: Choose the name for the app
     Type: String
-    Default: fridge_app
+    Default: fridge-app
 
   AWSGitHubConnection:
     Description: GitHub AWS connection created previously as it requires manual authentication process
@@ -22,19 +22,21 @@ Parameters:
     Type: String
     Default: aws_fridge_app
 
-  Metadata:
-    AWS::CloudFormation::Interface:
-      ParameterGroups:
-        - Label:
-            default: "CodePipeline Settings"
-          Parameters:
-            - AppName
-            - AWSGitHubConnection
-        - Label:
-            default: "GitHub Settings"
-          Parameters:
-            - GitHubOwner
-            - GitHubRepo
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - 
+        Label:
+          default: "CodePipeline Settings"
+        Parameters:
+          - AppName
+          - AWSGitHubConnection
+      - 
+        Label:
+          default: "GitHub Settings"
+        Parameters:
+          - GitHubOwner
+          - GitHubRepo
 
 Resources:
 
@@ -48,7 +50,7 @@ Resources:
   ArtifactStoreBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub ${AppName}_artifactstore_bucket
+      BucketName: !Sub ${AppName}-artifactstore-bucket
       VersioningConfiguration:
         Status: Enabled
 
@@ -77,7 +79,7 @@ Resources:
               OutputArtifacts:
                 - Name: SourceOutput
               RunOrder: 1
-        - Name: Test and Build
+        - Name: Test-Build
           Actions:
             - Name: Test
               ActionTypeId:
@@ -134,20 +136,17 @@ Resources:
         Image: aws/codebuild/standard:4.0
         EnvironmentVariables:
           - Name: AWS_REGION
-            Type: String
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
-            Type: String
             Value: !Ref AWS::AccountId
           - Name: ECR_URI
-            Type: string
             Value: !GetAtt ECR.RepositoryUri
       TimeoutInMinutes: 10
 
 
   CICDPipelineRole:
     Type: AWS::IAM::Role
-    Description: !Sub 'CodePipelineRole for ${AppName}'
+    Description: Role for CICD CodePipeline 
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -159,18 +158,6 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: CodePipeline
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - codepipeline:StartPipelineExecution
-                  - codepipeline:GetPipeline
-                  - codepipeline:GetPipelineState
-                  - codepipeline:GetPipelineExecution
-                  - codepipeline:ListPipelineExecutions
-                Resource: !Sub arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS:AccountId}:${CICDPipeline}
         - PolicyName: CodePipeline-CodeBuild
           PolicyDocument:
             Version: '2012-10-17'
@@ -178,8 +165,8 @@ Resources:
               - Effect: Allow
                 Action: codebuild:StartBuild
                 Resource: 
-                  - !Sub arn:${AWS::Partition}::${AWS::Region}:${AWS:AccountId}:project/${CodeTest}
-                  - !Sub arn:${AWS::Partition}::${AWS::Region}:${AWS:AccountId}:project/${CodeBuild}
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeTest}
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuild}
         - PolicyName: CodePipeline-S3
           PolicyDocument:
             Version: '2012-10-17'
@@ -198,10 +185,12 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: codestar-connections:UseConnection
-                Resource: !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
+
   CodeBuildRole:
     Type: AWS::IAM::Role
-    Description: !Sub 'CodeBuildRole for ${AppName}'
+    Description: Role for CICD CodeBuild
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
