@@ -1,0 +1,30 @@
+Description: Template for provisioning AppRunner Service that will host our application
+
+Parameters:
+  AppName:
+    Description: Choose the name for the app
+    Type: String
+    Default: fridge_app
+
+  DynamoTable:
+    Description: The name of DynamoTable to which the app makes requests
+    Type: String
+    Default: fridge_products
+
+  InstanceConfiguration:
+    Description: Available CPU and Memory configuration for the AppRunner instance. Check AppRunner specifications
+    Type: String 
+    Default: 0.25 vCPU, 0.5 GB
+    AllowedValues:
+      - 0.25 vCPU, 0.5 GB
+      - 0.25 vCPU, 1 GB
+      - 0.5 vCPU, 1 GB
+      - 1 vCPU, 2 GB
+      - 1 vCPU, 3 GB
+      - 1 vCPU, 4 GB
+      - 2 vCPU, 4 GB
+      - 2 vCPU, 6 GB
+      - 4 vCPU, 8 GB
+      - 4 vCPU, 10 GB
+      - 4 vCPU, 12 GB
+
