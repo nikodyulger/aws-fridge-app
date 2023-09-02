@@ -87,3 +87,10 @@ Resources:
         - AttributeName: name
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  AppRunner:
+    Description: URL of the deployed App Runner Service
+    Value: !Sub 
+      - 'https://${URL}'
+      - URL: GetAtt AppRunner.ServiceUrl
