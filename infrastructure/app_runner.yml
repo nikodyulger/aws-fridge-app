@@ -28,3 +28,46 @@ Parameters:
       - 4 vCPU, 10 GB
       - 4 vCPU, 12 GB
 
+Resources:
+
+  AppRunnerRole:
+    Type: 'AWS::IAM::Role'
+    Description: !Sub 'AppRunnerRole for ${AppName}'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - build.apprunner.amazonaws.com
+                - tasks.apprunner.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AmazonDynamoDBFullAccess
+
+  AppRunner:
+    Type: AWS::AppRunner::Service
+    DependsOn: AppRunnerRole
+    Properties:
+      ServiceName: !Sub "${Project}-service"
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt AppRunnerRole.Arn
+        ImageRepository:
+          ImageRepositoryType: ECR
+          ImageIdentifier: 
+            Fn::ImportValue: !Sub ecr-${AppName}
+          ImageConfiguration:
+            Port: 8080
+            RuntimeEnvironmentVariables:
+            - Name: DDB_TABLE
+              Value: !Ref DynamoTable
+        InstanceConfiguration:     
+          Cpu: 
+            !Select [0, !Split [',', !Ref InstanceConfiguration] ]
+          InstanceRoleArn: !Ref AppRunnerRole.Arn
+          Memory: 
+            !Select [1, !Split [',', !Ref InstanceConfiguration] ]
