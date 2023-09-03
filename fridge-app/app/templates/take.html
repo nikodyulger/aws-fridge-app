@@ -16,7 +16,7 @@
                             <h5 class="card-title">Take something</h5>
                         </div>
                         <div class="card-body">
-                            <form class="row g-3 align-items-center" name="grab" method="POST" action="/fridge/take">
+                            <form class="row g-3 align-items-center" name="grab" method="POST" action="/take">
                                 <div class="col-md-6 form-floating">
                                     <select class="form-select" id="product_id" name="product_id">
                                         {% for p in payload['products'] %}
