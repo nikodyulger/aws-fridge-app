@@ -56,3 +56,15 @@ def test_post_add_product(dynamodb_table):
     assert response.status_code == 200
     assert expected_message == found_message
     assert expected_num_items == found_num_items
+
+def test_get_take_product():
+
+    response = client.get('/take')
+    expected_ids = set(['product_id', 'one', 'everything'])
+
+    soup = BeautifulSoup(response, 'html.parser')
+    found_elements = soup.find_all(id=True)
+    found_ids = set([e.get('id') for e in found_elements])
+
+    assert response.status_code == 200
+    assert expected_ids == found_ids
