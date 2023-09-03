@@ -66,4 +66,4 @@ def dynamodb_table():
                 i['id'] = uuid.uuid4().hex
                 i['added_time'] = datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
                 batch.put_item(Item=i)
-        yield
+        yield mock_table
