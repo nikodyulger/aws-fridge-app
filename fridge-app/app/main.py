@@ -4,8 +4,8 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from datetime import datetime
 
-from fridge.schemas import ProductIn
-from fridge.ddb import FridgeProducts
+from app.schemas import ProductIn
+from app.ddb import FridgeProducts
 
 BASE_PATH = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_PATH / "templates"))

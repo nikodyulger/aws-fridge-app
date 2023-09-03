@@ -7,7 +7,7 @@ from boto3.dynamodb.conditions import Key
 from typing import List
 from pydantic import parse_obj_as
 
-from fridge.schemas import ProductIn, ProductOut
+from app.schemas import ProductIn, ProductOut
 
 class FridgeProducts:
     
