@@ -1,6 +1,8 @@
+import uuid
+from datetime import datetime
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Key, Attr
 
 from app.main import fridge
 
@@ -68,3 +70,39 @@ def test_get_take_product():
 
     assert response.status_code == 200
     assert expected_ids == found_ids
+
+def test_post_take_one_product(dynamodb_table):
+    product_id = uuid.uuid4().hex
+    initial_qty = 4
+    product_to_take =  {
+        "id": product_id,
+        "name": "Pizza",
+        "compartment": "Freezer",
+        "shop": "Dia",
+        "qty": initial_qty,
+        "unit": "Units",
+        "expiration_date": "30-12-2023",
+        "added_time": datetime.utcnow().strftime("%m-%d-%Y, %H:%M:%S")
+    }
+    expected_message = f"Product {product_to_take['name']} has been taken succesfully"
+
+    dynamodb_table.put_item(
+        Item=product_to_take
+    )  
+
+    response = client.post('/take',
+                           data={
+                                'product_id': product_id,
+                                'inline_qty': 'one'
+                            })
+    soup = BeautifulSoup(response, 'html.parser')
+    found_message = soup.find_all("div", class_="alert")[0].get_text().strip()
+
+    res = dynamodb_table.query(
+        KeyConditionExpression=Key('id').eq(product_id)
+    )
+    found_qty = [i.get('qty') for i in res.get('Items',[])][0]
+
+    assert response.status_code == 200
+    assert expected_message == found_message
+    assert initial_qty - 1 == found_qty
