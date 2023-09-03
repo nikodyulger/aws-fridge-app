@@ -1,0 +1,244 @@
+Description: "Create a Docker CI/CD pipeline with CodePipeline, CodeBuild and ECR"
+
+Parameters:
+
+  AppName:
+    Description: Choose the name for the app
+    Type: String
+    Default: fridge-app
+
+  AWSGitHubConnection:
+    Description: GitHub AWS connection created previously as it requires manual authentication process
+    Type: String
+    Default: aws_github_connection
+
+  GitHubOwner:
+    Description: The owner of the GitHub repo
+    Type: String
+    Default: nikodyulger
+
+  GitHubRepo:
+    Description: The GitHub repository name
+    Type: String
+    Default: aws_fridge_app
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - 
+        Label:
+          default: "CodePipeline Settings"
+        Parameters:
+          - AppName
+          - AWSGitHubConnection
+      - 
+        Label:
+          default: "GitHub Settings"
+        Parameters:
+          - GitHubOwner
+          - GitHubRepo
+
+Resources:
+
+  ECR: 
+    Type: AWS::ECR::Repository
+    Properties: 
+      RepositoryName: !Ref AppName
+      ImageScanningConfiguration: 
+        ScanOnPush: true
+
+  ArtifactStoreBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AppName}-artifactstore-bucket
+      VersioningConfiguration:
+        Status: Enabled
+
+  CICDPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn: ArtifactStoreBucket
+    Properties:
+      Name: !Sub ${AppName}-cicd-pipeline
+      RoleArn: !GetAtt CICDPipelineRole.Arn
+      ArtifactStore:
+        Location: !Ref ArtifactStoreBucket
+        Type: S3
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              Configuration:
+                ConnectionArn: !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
+                FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}/${AppName}
+                BranchName: master
+              OutputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 1
+        - Name: Test-Build
+          Actions:
+            - Name: Test
+              ActionTypeId:
+                Category: Test
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref CodeTest
+              InputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 2
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref CodeBuild
+              InputArtifacts:
+                - Name: SourceOutput
+              RunOrder: 3
+
+  CodeTest:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${AppName}-cicd-test
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-test.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+      TimeoutInMinutes: 10
+
+  CodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${AppName}-cicd-build
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec-build.yml
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:4.0
+        EnvironmentVariables:
+          - Name: AWS_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: ECR_URI
+            Value: !GetAtt ECR.RepositoryUri
+      TimeoutInMinutes: 10
+
+
+  CICDPipelineRole:
+    Type: AWS::IAM::Role
+    Description: Role for CICD CodePipeline 
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodePipeline-CodeBuild
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: codebuild:StartBuild
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeTest}
+                  - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuild}
+        - PolicyName: CodePipeline-S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: 
+                  - !GetAtt ArtifactStoreBucket.Arn
+        - PolicyName: CodePipeline-GitHubConnection
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: codestar-connections:UseConnection
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Description: Role for CICD CodeBuild
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CodeBuild-S3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                  - s3:PutObject
+                Resource:
+                  - !GetAtt ArtifactStoreBucket.Arn
+        - PolicyName: CodeBuild-ECR
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:GetRepositoryPolicy
+                  - ecr:DescribeRepositories
+                  - ecr:ListImages
+                  - ecr:DescribeImages
+                  - ecr:BatchGetImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
+                Resource: 
+                  - !GetAtt ECR.Arn
+
+Outputs:
+  ECRUri:
+    Description: ECR Repository URI
+    Value: !GetAtt ECR.RepositoryUri
+    Export:
+      Name: !Sub ecr-${AppName}

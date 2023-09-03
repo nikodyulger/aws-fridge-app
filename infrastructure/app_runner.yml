@@ -1,0 +1,96 @@
+Description: Template for provisioning AppRunner Service that will host our application
+
+Parameters:
+  AppName:
+    Description: Choose the name for the app
+    Type: String
+    Default: fridge_app
+
+  DynamoTable:
+    Description: The name of DynamoTable to which the app makes requests
+    Type: String
+    Default: fridge_products
+
+  InstanceConfiguration:
+    Description: Available CPU and Memory configuration for the AppRunner instance. Check AppRunner specifications
+    Type: String 
+    Default: 0.25 vCPU, 0.5 GB
+    AllowedValues:
+      - 0.25 vCPU, 0.5 GB
+      - 0.25 vCPU, 1 GB
+      - 0.5 vCPU, 1 GB
+      - 1 vCPU, 2 GB
+      - 1 vCPU, 3 GB
+      - 1 vCPU, 4 GB
+      - 2 vCPU, 4 GB
+      - 2 vCPU, 6 GB
+      - 4 vCPU, 8 GB
+      - 4 vCPU, 10 GB
+      - 4 vCPU, 12 GB
+
+Resources:
+
+  AppRunnerRole:
+    Type: 'AWS::IAM::Role'
+    Description: !Sub 'AppRunnerRole for ${AppName}'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - build.apprunner.amazonaws.com
+                - tasks.apprunner.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AmazonDynamoDBFullAccess
+
+  AppRunner:
+    Type: AWS::AppRunner::Service
+    DependsOn: AppRunnerRole
+    Properties:
+      ServiceName: !Sub "${Project}-service"
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt AppRunnerRole.Arn
+        ImageRepository:
+          ImageRepositoryType: ECR
+          ImageIdentifier: 
+            Fn::ImportValue: !Sub ecr-${AppName}
+          ImageConfiguration:
+            Port: 8080
+            RuntimeEnvironmentVariables:
+            - Name: DDB_TABLE
+              Value: !Ref DynamoTable
+        InstanceConfiguration:     
+          Cpu: 
+            !Select [0, !Split [',', !Ref InstanceConfiguration] ]
+          InstanceRoleArn: !Ref AppRunnerRole.Arn
+          Memory: 
+            !Select [1, !Split [',', !Ref InstanceConfiguration] ]
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref DynamoTable
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S 
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: name
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  AppRunner:
+    Description: URL of the deployed App Runner Service
+    Value: !Sub 
+      - 'https://${URL}'
+      - URL: GetAtt AppRunner.ServiceUrl
