@@ -17,3 +17,13 @@ def test_open_fridge():
     assert response.status_code == 200
     assert product_name == finded_product
 
+def test_get_add_product():
+
+    response = client.get('/add')
+    expected_ids = set(['name', 'shop', 'qty', 'unit', 'fridge_radio', 'freezer_radio', 'expiration_date'])
+    soup = BeautifulSoup(response, 'html.parser')
+    found_elements = soup.find_all(id=True)
+    found_ids = set([e.get('id') for e in found_elements])
+
+    assert response.status_code == 200
+    assert expected_ids == found_ids
