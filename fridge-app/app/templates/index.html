@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Fridge</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    </head>
+    <body>
+        {% include "nav.html" %}
+        <div class="container-fluid m-2">
+          <div class="row d-flex justify-content-center m-2">
+            <div class="col-8">
+              <div class="card text-center">
+                <div class="card-header">
+                  Service powered by AWS
+                </div>
+                <div class="card-body">
+                  <h5 class="card-title">Hi! You just opened the fridge!</h5>
+                  <p class="card-text">Take something to eat or add new products</p>
+                  <div class="btn-group gap-2 d-inline-block" role="group"> 
+                    <a class="btn btn-primary" href="/take">Take</a>
+                    <a class="btn btn-outline-success" href="/add">Add</a>
+                  </div>
+                </div>
+                <div class="card-footer text-muted">
+                  There are <strong>{{ payload['products']|selectattr('expired')|list|length }} expired</strong> products
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row d-flex justify-content-center m-2">
+            <div class="col-8">
+              <div class="card text-center">
+                <div class="card-header">
+                  <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link active" id="fridge-tab" data-bs-toggle="tab" data-bs-target="#fridge-content" type="button" role="tab" aria-controls="fridge" aria-selected="true">Fridge</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link" id="freezer-tab" data-bs-toggle="tab" data-bs-target="#freezer-content" type="button" role="tab" aria-controls="freezer" aria-selected="false">Freezer</button>
+                    </li>
+                  </ul>
+                </div>
+                <div class="card-body">
+                  <div class="tab-content">
+                    <div class="tab-pane fade show active" id="fridge-content" role="tabpanel" aria-labelledby="fridge-tab">
+                      <div class="table-responsive">
+                        <table class="table table-striped align-middle">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col">name</th>
+                              <th scope="col">shop</th>
+                              <th scope="col">qty</th>
+                              <th scope="col">unit</th>
+                              <th scope="col">exp. date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in payload['products'] %}
+                              {% if i.compartment == 'Fridge'%}
+                              <tr {% if i.expired %} class="table-danger" {% endif %}>
+                                <td>{{i.name}}</td>
+                                <td>{{i.shop}}</td>
+                                <td>{{i.qty}}</td>
+                                <td>{{i.unit}}</td>
+                                <td>{{i.expiration_date}}</td>
+                              </tr>
+                              {% endif %}
+                            {% endfor %} 
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div class="tab-pane fade" id="freezer-content" role="tabpanel" aria-labelledby="freezer-tab"> 
+                      <div class="table-responsive">
+                        <table class="table table-striped align-middle">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col">name</th>
+                              <th scope="col">shop</th>
+                              <th scope="col">qty</th>
+                              <th scope="col">unit</th>
+                              <th scope="col">exp. date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for i in payload['products'] %}
+                              {% if i.compartment == 'Freezer'%}
+                              <tr {% if i.expired %} class="table-danger" {% endif %}>
+                                <td>{{i.name}}</td>
+                                <td>{{i.shop}}</td>
+                                <td>{{i.qty}}</td>
+                                <td>{{i.unit}}</td>
+                                <td>{{i.expiration_date}}</td>
+                              </tr>
+                              {% endif %}
+                          {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+    </body>
+</html>
