@@ -11,14 +11,13 @@ from app.schemas import ProductIn, ProductOut
 
 class FridgeProducts:
     
-    resource = os.getenv('RESOURCE')
     table_name = os.getenv('DDB_TABLE')
 
     def __init__(self):
         self.table = self.get_table()
         
     def get_table(self):
-        ddb = boto3.resource(self.resource, endpoint_url=('http://localhost:8000'
+        ddb = boto3.resource('dynamodb', endpoint_url=('http://localhost:8000'
                                                           if os.getenv('LOCAL_ENV') else None))
         table = ddb.Table(self.table_name)
         return table
