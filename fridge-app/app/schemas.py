@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal
 from fastapi import Form
 from pydantic import BaseModel, Field, validator
