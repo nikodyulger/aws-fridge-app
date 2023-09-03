@@ -41,7 +41,7 @@ class FridgeProducts:
         except ClientError as e:
             return JSONResponse(content=e.response["Error"], status_code=500)
     
-    def delete_product(self, id: str, name: str):
+    def remove_product(self, id: str, name: str):
         try:
             self.table.delete_item(Key={'id': id, 'name': name})
         except ClientError as e:
@@ -56,7 +56,7 @@ class FridgeProducts:
 
     def take_one_product(self, id: str, name: str, qty: int):
         if qty - 1 == 0:
-            self.delete_product(id, name)
+            self.remove_product(id, name)
             return
         else:
             qty_left = qty - 1

@@ -67,14 +67,14 @@ def take_product(request: Request):
     )
 
 @fridge_router.post('/take', response_class=HTMLResponse)
-def take_product(request: Request, product_id: str = Form(...), inlineQty: str = Form(...)):
+def take_product(request: Request, product_id: str = Form(...), inline_qty: str = Form(...)):
     fridge_products = FridgeProducts()
     product = fridge_products.get_product(product_id)
 
-    if inlineQty == 'one':
+    if inline_qty == 'one':
         fridge_products.take_one_product(product.id, product.name, product.qty)
-    elif inlineQty == 'everything':
-        fridge_products.delete_product(product.id, product.name)
+    elif inline_qty == 'everything':
+        fridge_products.remove_product(product.id, product.name)
 
     products = fridge_products.get_products()
     payload = {
