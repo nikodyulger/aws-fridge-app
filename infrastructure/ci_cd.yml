@@ -156,6 +156,10 @@ Resources:
             Value: !Ref AWS::AccountId
           - Name: ECR_URI
             Value: !GetAtt ECR.RepositoryUri
+          - Name: APP_NAME
+            Value: !Ref AppName
+          - Name: IMAGE_TAG
+            Value: latest
       TimeoutInMinutes: 10
 
   CloudWatchLogsGroup:
@@ -314,7 +318,7 @@ Resources:
                   - ecr:CompleteLayerUpload
                   - ecr:PutImage
                 Resource: 
-                  - !GetAtt ECR.Arn
+                  - '*'
 
 Outputs:
   ECRUri:
