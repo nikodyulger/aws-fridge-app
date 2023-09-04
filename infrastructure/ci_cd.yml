@@ -10,7 +10,7 @@ Parameters:
   AWSGitHubConnection:
     Description: GitHub AWS connection created previously as it requires manual authentication process
     Type: String
-    Default: aws_github_connection
+    Default: aws-github-connection
 
   GitHubOwner:
     Description: The owner of the GitHub repo
@@ -20,7 +20,12 @@ Parameters:
   GitHubRepo:
     Description: The GitHub repository name
     Type: String
-    Default: aws_fridge_app
+    Default: aws-fridge-app
+
+  BranchName:
+    Description: GitHub branch name
+    Type: String
+    Default: master
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -37,6 +42,7 @@ Metadata:
         Parameters:
           - GitHubOwner
           - GitHubRepo
+          - BranchName
 
 Resources:
 
@@ -74,8 +80,9 @@ Resources:
                 Version: 1
               Configuration:
                 ConnectionArn: !Sub arn:${AWS::Partition}:codestar-connections:${AWS::Region}:${AWS::AccountId}:connection/${AWSGitHubConnection}
-                FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}/${AppName}
-                BranchName: master
+                FullRepositoryId: !Sub ${GitHubOwner}/${GitHubRepo}
+                BranchName: !Ref BranchName
+                OutputArtifactFormat: CODE_ZIP
               OutputArtifacts:
                 - Name: SourceOutput
               RunOrder: 1
@@ -143,11 +150,41 @@ Resources:
             Value: !GetAtt ECR.RepositoryUri
       TimeoutInMinutes: 10
 
+  SampleBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactStoreBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: "DenyUnEncryptedObjectUploads"
+            Action:
+              - s3:PutObject
+            Effect: Deny
+            Resource: !Sub
+              - "arn:${AWS::Partition}:s3:::${bucket_name}/*"
+              - bucket_name: !Ref ArtifactStoreBucket
+            Principal: '*'
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: 'aws:kms'
+          - Sid: "DenyInsecureConnections"
+            Action:
+              - s3:*
+            Effect: Deny
+            Resource: !Sub
+              - "arn:${AWS::Partition}:s3:::${bucket_name}/*"
+              - bucket_name: !Ref ArtifactStoreBucket
+            Principal: '*'
+            Condition:
+              Bool:
+                aws:SecureTransport: false
 
   CICDPipelineRole:
     Type: AWS::IAM::Role
     Description: Role for CICD CodePipeline 
     Properties:
+      RoleName: !Sub ${AppName}-cicd-pipeline-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -163,7 +200,9 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action: codebuild:StartBuild
+                Action: 
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
                 Resource: 
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeTest}
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuild}
@@ -173,10 +212,18 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:GetBucketLocation
-                  - s3:ListBucket
+                  - s3:*
+                Resource: 
+                  - !Sub
+                    - "arn:${AWS::Partition}:s3:::${bucket_name}/*"
+                    - bucket_name: !Ref ArtifactStoreBucket
+        - PolicyName: CodePipeline-S3-List
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:List
                 Resource: 
                   - !GetAtt ArtifactStoreBucket.Arn
         - PolicyName: CodePipeline-GitHubConnection
@@ -192,6 +239,7 @@ Resources:
     Type: AWS::IAM::Role
     Description: Role for CICD CodeBuild
     Properties:
+      RoleName: !Sub ${AppName}-cicd-codebuild-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
