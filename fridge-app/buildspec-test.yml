@@ -6,6 +6,9 @@ phases:
       python: 3.9
   pre_build:
     commands:
+      - echo Changing directory to fridge-app
+      - cd ./fridge-app
+      - echo Installing dependencies
       - pip install -r requirements.txt
   build:
     commands:
