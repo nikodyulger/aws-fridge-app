@@ -4,35 +4,35 @@ Parameters:
   AppName:
     Description: Choose the name for the app
     Type: String
-    Default: fridge_app
+    Default: fridge-app
 
   DynamoTable:
     Description: The name of DynamoTable to which the app makes requests
     Type: String
-    Default: fridge_products
+    Default: fridge-products
 
   InstanceConfiguration:
     Description: Available CPU and Memory configuration for the AppRunner instance. Check AppRunner specifications
     Type: String 
-    Default: 0.25 vCPU, 0.5 GB
+    Default: 0.25 vCPU,0.5 GB
     AllowedValues:
-      - 0.25 vCPU, 0.5 GB
-      - 0.25 vCPU, 1 GB
-      - 0.5 vCPU, 1 GB
-      - 1 vCPU, 2 GB
-      - 1 vCPU, 3 GB
-      - 1 vCPU, 4 GB
-      - 2 vCPU, 4 GB
-      - 2 vCPU, 6 GB
-      - 4 vCPU, 8 GB
-      - 4 vCPU, 10 GB
-      - 4 vCPU, 12 GB
+      - 0.25 vCPU,0.5 GB
+      - 0.25 vCPU,1 GB
+      - 0.5 vCPU,1 GB
+      - 1 vCPU,2 GB
+      - 1 vCPU,3 GB
+      - 1 vCPU,4 GB
+      - 2 vCPU,4 GB
+      - 2 vCPU,6 GB
+      - 4 vCPU,8 GB
+      - 4 vCPU,10 GB
+      - 4 vCPU,12 GB
 
 Resources:
 
   AppRunnerRole:
     Type: 'AWS::IAM::Role'
-    Description: !Sub 'AppRunnerRole for ${AppName}'
+    Description: Role for AppRunner
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -46,31 +46,32 @@ Resources:
               - 'sts:AssumeRole'
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
-        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/service-role/AmazonDynamoDBFullAccess
+        - !Sub arn:${AWS::Partition}:iam::${AWS::Partition}:policy/AmazonDynamoDBFullAccess
 
   AppRunner:
     Type: AWS::AppRunner::Service
     DependsOn: AppRunnerRole
     Properties:
-      ServiceName: !Sub "${Project}-service"
+      ServiceName: !Sub "${AppName}-service"
       SourceConfiguration:
+        AutoDeploymentsEnabled: false
         AuthenticationConfiguration:
           AccessRoleArn: !GetAtt AppRunnerRole.Arn
         ImageRepository:
           ImageRepositoryType: ECR
-          ImageIdentifier: 
-            Fn::ImportValue: !Sub ecr-${AppName}
+          ImageIdentifier:
+           Fn::ImportValue: !Sub ecr-${AppName}-version
           ImageConfiguration:
             Port: 8080
             RuntimeEnvironmentVariables:
             - Name: DDB_TABLE
               Value: !Ref DynamoTable
-        InstanceConfiguration:     
-          Cpu: 
-            !Select [0, !Split [',', !Ref InstanceConfiguration] ]
-          InstanceRoleArn: !Ref AppRunnerRole.Arn
-          Memory: 
-            !Select [1, !Split [',', !Ref InstanceConfiguration] ]
+      InstanceConfiguration:     
+        Cpu: 
+          !Select [0, !Split [',', !Ref InstanceConfiguration] ]
+        InstanceRoleArn: !GetAtt AppRunnerRole.Arn
+        Memory: 
+          !Select [1, !Split [',', !Ref InstanceConfiguration] ]
 
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
@@ -89,8 +90,18 @@ Resources:
       BillingMode: PAY_PER_REQUEST
 
 Outputs:
-  AppRunner:
+  AppRunnerURL:
     Description: URL of the deployed App Runner Service
     Value: !Sub 
       - 'https://${URL}'
-      - URL: GetAtt AppRunner.ServiceUrl
+      - URL: !GetAtt AppRunner.ServiceUrl
+  AppRunnerServiceArn:
+    Description: Arn of the deployed App Runner Service
+    Value: !GetAtt AppRunner.ServiceArn
+    Export:
+      Name: !Sub "${AppName}-service-arn"
+  AppRunnerServiceName:
+    Description: The name of deployed App Runner application
+    Value: !Sub "${AppName}-service"
+    Export:
+      Name: !Sub "${AppName}-service-name"

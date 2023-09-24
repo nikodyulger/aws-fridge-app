@@ -1,0 +1,114 @@
+service: infrastructure-lambdas
+
+frameworkVersion: '3'
+
+useDotenv: true
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: python3.9
+
+functions:
+  deploy-action:
+    name: ${env:APP_NAME}-deploy-action
+    description: Lambda function used in CICD CodePipeline to make the manual deployment of AppRunner service
+    handler: deploy-action.handler
+    role: LambdaDeployActionRole
+    timeout: 600
+    environment:
+      APP_NAME: ${env:APP_NAME}
+
+  control-service:
+    name: ${env:APP_NAME}-control-service
+    description: Lambda function used to start and resume the AppRunner service
+    handler: control-service.handler
+    role: LambdaControlServiceRole
+    timeout: 50
+    events:
+      - schedule:
+          rate:
+            - cron(0 7 * * ? *)
+          input:
+            service_name: ${env:SERVICE_NAME}
+            action: resume
+      - schedule:
+          rate:
+            - cron(0 13 * * ? *)
+          input:
+            service_name: ${env:SERVICE_NAME}
+            action: pause           
+resources:
+  Resources:
+    LambdaDeployActionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${env:APP_NAME}-deploy-action-role
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: LambdaLogsPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Effect: "Allow"
+                  Resource: 
+                   - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*:*"
+                - Action:
+                    - "codepipeline:PutJobSuccessResult"
+                    - "codepipeline:PutJobFailureResult"
+                  Effect: "Allow"
+                  Resource: 
+                    - '*'
+                - Action:
+                    - "apprunner:StartDeployment"
+                    - "apprunner:ListOperations"
+                    - "apprunner:ListServices"
+                  Effect: "Allow"
+                  Resource: 
+                    - '*'
+
+    LambdaControlServiceRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - 'lambda.amazonaws.com'
+              Action:
+                - 'sts:AssumeRole'
+        Policies:
+          - PolicyName: LambdaLogsPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Effect: "Allow"
+                  Resource: 
+                   - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*:*"
+          - PolicyName: PauseResumeAppRunnerPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - 'apprunner:PauseService'
+                    - 'apprunner:ResumeService'
+                  Resource: 
+                    - '*'

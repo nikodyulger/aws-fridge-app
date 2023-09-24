@@ -1,0 +1,65 @@
+Description: Amazon SNS topic and Amazon EventBridge rule to send email notifications for AWS App Runner events.
+
+Parameters:
+
+  AppName:
+    Description: Choose the name for the app topic
+    Type: String
+    Default: fridge-app 
+
+  EmailAddress:
+    Type: String
+    Description: The email address to receive event notifications for App Runner application
+    AllowedPattern: '[^@]+@[^@]+\.[^@]+'
+
+Resources:
+
+  SnsTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: !Sub "${AppName}-service-topic"
+
+  SnsTopicEmailSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      Endpoint: !Ref EmailAddress
+      Protocol: 'email'
+      TopicArn: !Ref SnsTopic
+
+  SnsTopicPublishPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sns:Publish'
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Resource: !Ref SnsTopic
+      Topics:
+        - !Ref SnsTopic
+
+  EventNotificationEventBridgeRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: 'Publishes SNS message on successful or failed pause, resume and deploy events of the App Runner service'
+      EventPattern: 
+        source: 
+        - 'aws.apprunner'
+        detail: 
+          serviceName:
+            - Fn::ImportValue: !Sub "${AppName}-service-name"
+          operationStatus: 
+            - 'PauseServiceCompletedSuccessfully'
+            - 'PauseServiceFailed'
+            - 'ResumeServiceCompletedSuccessfully'
+            - 'ResumeServiceFailed'
+            - 'DeploymentCompletedSuccessfully'
+            - 'DeploymentFailed'
+      State: 'ENABLED'
+      Targets: 
+        - Arn: !Ref SnsTopic
+          Id: '1'
