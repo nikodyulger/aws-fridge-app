@@ -90,8 +90,18 @@ Resources:
       BillingMode: PAY_PER_REQUEST
 
 Outputs:
-  AppRunner:
+  AppRunnerURL:
     Description: URL of the deployed App Runner Service
     Value: !Sub 
       - 'https://${URL}'
       - URL: !GetAtt AppRunner.ServiceUrl
+  AppRunnerServiceArn:
+    Description: Arn of the deployed App Runner Service
+    Value: !GetAtt AppRunner.ServiceArn
+    Export:
+      Name: !Sub "${AppName}-service-arn"
+  AppRunnerServiceName:
+    Description: The name of deployed App Runner application
+    Value: !Sub "${AppName}-service"
+    Export:
+      Name: !Sub "${AppName}-service-name"
