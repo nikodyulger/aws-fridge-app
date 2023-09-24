@@ -8,9 +8,9 @@ Parameters:
     Default: fridge-app
 
   AWSGitHubConnection:
-    Description: GitHub AWS connection created previously as it requires manual authentication process
+    Description: GitHub AWS connection ID created previously as it requires manual authentication process
     Type: String
-    Default: aws-github-connection
+    Default: aws-github-connection-id
 
   GitHubOwner:
     Description: The owner of the GitHub repo
@@ -72,7 +72,7 @@ Resources:
       Stages:
         - Name: Source
           Actions:
-            - Name: SourceAction
+            - Name: Source
               ActionTypeId:
                 Category: Source
                 Owner: AWS
@@ -110,6 +110,20 @@ Resources:
               InputArtifacts:
                 - Name: SourceOutput
               RunOrder: 3
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Provider: Lambda
+                Version: 1
+              Configuration:
+                FunctionName: !Sub ${AppName}-deploy-action
+                UserParameters: !Sub ${AppName}-service
+              OutputArtifacts: []
+              InputArtifacts: []
+              Region: !Ref AWS::Region
 
   CodeTest:
     Type: AWS::CodeBuild::Project
@@ -225,6 +239,16 @@ Resources:
                 Resource: 
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeTest}
                   - !Sub arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuild}
+        - PolicyName: CodePipeline-Lambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: 
+                - lambda:InvokeFunction
+                - lambda:ListFunctions
+              Resource: 
+                - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AppName}-deploy-action
         - PolicyName: CodePipeline-S3
           PolicyDocument:
             Version: '2012-10-17'
