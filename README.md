@@ -21,3 +21,15 @@ The diagram illustrates the entire architecture of the web app. All resources ar
 *cron* events that triggers a Lambda which *starts* or *resumes* its execution based on the received parameters. On the other hand, there is an EventBridge rule that listens the *success* or *failure* of these controlling actions and also of the launched deployments over the service. This way a message is sent to an **SNS** topic and the subscriptors are notified of these changes.
 3. **Custom Domain**: registered and linked alias *DNS record* created with **Route53**, so users can find the web with a more readable URL.
 4. **Roles, Policies and Logs**: the invisible part, but one of the most critical in the design of every infrastructure.
+
+## Frameworks/Tools
+
+The infrastructure is not the only relevant part of this project, it is also important to know how to create it. With that purpose, several frameworks and tools are used:
+
+- [**FastApi**](https://fastapi.tiangolo.com/): it helps to create self-documented APIs in a very simple and fast way
+- [**Serverless**](https://www.serverless.com/): it boost the deployment of serverless resources to the cloud by simplifying your templates
+- [**Handlebars**](https://handlebarsjs.com/): it is used to create modularized HTML templates
+- [**Jinja**](https://jinja.palletsprojects.com/en/3.1.x/): it helps to create dynamic templates with Python
+- [**Pytest**](https://docs.pytest.org/en/7.4.x/): it is used to automate testing of your code
+- [**Moto**](https://docs.getmoto.org/en/latest/): it mocks some cloud services for testing purposes
+- [**Docker**](https://docs.docker.com/): it created the containers for your app, so it can be runned everywhere
