@@ -60,3 +60,11 @@ To save costs the action have been taken:
 The highest cost is to a register a domain (nearly 15 USD).  AppRunner is the only one that calculations can get very messy and unpredictable. Everything else is at cost zero if you mantain low traffic and do not build multiple images every single day.
 
 **NOTE** Try to use the [AWS Pricing Calculator](https://calculator.aws/#/) to understand for what are you going to be billed and forecast your expenses.
+
+## Future Work
+
+There is always work to be done. Here is a wishlist that I have thought about for this project:
+
+- Integrate the SNS topics with some alert/monitor tool. Not just sending raw events to a e-mail
+- Create dynamic tags for the ECR image
+- Add more functionality to the app, for example, send message if there are expired items
