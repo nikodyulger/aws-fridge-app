@@ -21,10 +21,10 @@ The diagram illustrates the entire architecture of the web app. All resources ar
 
 1. **CICD pipeline**: every time there is a change on *master* branch of the code repository, the CodePipeline is triggered. It source the code from **GitHub**, then it runs the test in CodeBuild and after there are passed an ECR image is created. The Lambda *deploy-action* starts a new *“manual”* deployment for the App Runner service with the already created image.
 2. **App Runner**: it is a containeraized web app, static HTML templates are sent to the client with the data from a DynamoDB. 
-3.**Events**: as AppRunner can get quite expensive, there are 
+3. **Events**: as AppRunner can get quite expensive, there are 
 *cron* events that triggers a Lambda which *starts* or *resumes* its execution based on the received parameters. On the other hand, there is an EventBridge rule that listens the *success* or *failure* of these controlling actions and also of the launched deployments over the service. This way a message is sent to an **SNS** topic and the subscriptors are notified of these changes.
-3. **Custom Domain**: registered and linked alias *DNS record* created with **Route53**, so users can find the web with a more readable URL.
-4. **Roles, Policies and Logs**: the invisible part, but one of the most critical in the design of every infrastructure.
+4. **Custom Domain**: registered and linked alias *DNS record* created with **Route53**, so users can find the web with a more readable URL.
+5. **Roles, Policies and Logs**: the invisible part, but one of the most critical in the design of every infrastructure.
 
 ## Frameworks/Tools
 
@@ -51,7 +51,7 @@ Stack order:
 1. Serverless. Deploy all lambdas as we already know how we are going to name our service. The command to execute inside the `infrastructure/lambdas` is `serverless deploy`. For that, you need to install serverless previously on your local machine with `npm install -g serverless`
 2. `ci_cd.yml` is the first stack to deploy. Remember to introduce the already created **GitHub connection ID** as parameter. The first execution of the pipeline will fail, because the App Runner service won’t exist yet. However, an image will be build and be available at the ECR repository
 3. `app_runner` template will deploy the service and a dynamo table to which the queries are made. It takes a while, be patient. Remember it is provisioning all the infrastructure for you.
-4. Last but not least, `eventrribdge` will create the listeners for the AppRunner service with the SNS topic and subscription. Remember to confirm the subscription, if not you will not be monitoring nothign at all. Check the spam folder of your email just in case!
+4. Last but not least, `eventbridge` will create the listeners for the AppRunner service with the SNS topic and subscription. Remember to confirm the subscription, if not you will not be monitoring nothign at all. Check the spam folder of your email just in case!
 
 ## Costs
 
@@ -61,7 +61,7 @@ To save costs the action have been taken:
 - Provision the smallest instance possible
 - Free Tier for CodePipeline, CodeBuild, Lambda, Eventbridge and SNS
 
-The highest cost is to a register a domain (nearly 15 USD).  AppRunner is the only one that calculations can get very messy and unpredictable. Everything else is at cost zero if you mantain low traffic and do not build multiple images every single day.
+The highest cost is to a register a domain (nearly 15 USD).  AppRunner is the only one that calculations can get very messy and unpredictable. Everything else is at cost zero if there is low traffic and there are not unnecessary builds.
 
 **NOTE** Try to use the [AWS Pricing Calculator](https://calculator.aws/#/) to understand for what are you going to be billed and forecast your expenses.
 
