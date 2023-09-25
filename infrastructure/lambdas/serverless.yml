@@ -74,6 +74,7 @@ resources:
                     - apprunner:StartDeployment
                     - apprunner:ListOperations
                     - apprunner:ListServices
+                    - apprunner:DescribeService
                   Effect: "Allow"
                   Resource: 
                     - '*'
