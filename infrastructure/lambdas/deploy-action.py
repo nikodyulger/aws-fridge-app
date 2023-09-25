@@ -17,7 +17,7 @@ def handler(event, context):
         put_job_failure('The UserParameters field must contain a valid reference to the AppRunner service')
         return
     
-    service_arn = get_service_arn(pipeline_service, job_id)
+    service_arn = get_service_arn(pipeline_service, job_id, context)
     start_deployment(service_arn, job_id, context)
 
 # Notify CodePipeline of a successful job
