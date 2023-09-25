@@ -65,15 +65,15 @@ resources:
                   Resource: 
                    - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*:*"
                 - Action:
-                    - "codepipeline:PutJobSuccessResult"
-                    - "codepipeline:PutJobFailureResult"
+                    - codepipeline:PutJobSuccessResult
+                    - codepipeline:PutJobFailureResult
                   Effect: "Allow"
                   Resource: 
                     - '*'
                 - Action:
-                    - "apprunner:StartDeployment"
-                    - "apprunner:ListOperations"
-                    - "apprunner:ListServices"
+                    - apprunner:StartDeployment
+                    - apprunner:ListOperations
+                    - apprunner:ListServices
                   Effect: "Allow"
                   Resource: 
                     - '*'
@@ -102,13 +102,14 @@ resources:
                   Effect: "Allow"
                   Resource: 
                    - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*:*"
-          - PolicyName: PauseResumeAppRunnerPolicy
+          - PolicyName: LambdaAppRunnerPolicy
             PolicyDocument:
               Version: '2012-10-17'
               Statement:
                 - Effect: Allow
                   Action:
-                    - 'apprunner:PauseService'
-                    - 'apprunner:ResumeService'
+                    - apprunner:PauseService
+                    - apprunner:ResumeService
+                    - apprunner:ListServices
                   Resource: 
                     - '*'
