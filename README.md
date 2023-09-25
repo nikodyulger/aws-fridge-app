@@ -68,3 +68,9 @@ There is always work to be done. Here is a wishlist that I have thought about fo
 - Integrate the SNS topics with some alert/monitor tool. Not just sending raw events to a e-mail
 - Create dynamic tags for the ECR image
 - Add more functionality to the app, for example, send message if there are expired items
+
+## References
+
+- [Controlling and monitoring AWS App Runner applications with Amazon EventBridge](https://aws.amazon.com/es/blogs/containers/controlling-and-monitoring-aws-app-runner-applications-with-amazon-eventbridge/)
+- [AWS CodePipeline: Build & Test with CodeBuild](https://community.ops.io/jatin/aws-codepipeline-build-test-with-codebuild-1bdh)
+- [Deploy Python Application using AWS App Runner](https://aws.amazon.com/es/blogs/containers/deploy-python-application-using-aws-app-runner/)
