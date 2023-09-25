@@ -48,3 +48,15 @@ Stack order:
 2. `ci_cd.yml` is the first stack to deploy. Remember to introduce the already created **GitHub connection ID** as parameter. The first execution of the pipeline will fail, because the App Runner service won’t exist yet. However, an image will be build and be available at the ECR repository
 3. `app_runner` template will deploy the service and a dynamo table to which the queries are made. It takes a while, be patient. Remember it is provisioning all the infrastructure for you.
 4. Last but not least, `eventrribdge` will create the listeners for the AppRunner service with the SNS topic and subscription. Remember to confirm the subscription, if not you will not be monitoring nothign at all. Check the spam folder of your email just in case!
+
+## Costs
+
+To save costs the action have been taken:
+- AppRunner with manual deployments, to save that `1` *extra dollar* from the bill for automatic deployments.
+- Pause/Resume the AppRunner service to avoid traffic and instance cost per hour. Run it only when you need it.
+- Provision the smallest instance possible
+- Free Tier for CodePipeline, CodeBuild, Lambda, Eventbridge and SNS
+
+The highest cost is to a register a domain (nearly 15 USD).  AppRunner is the only one that calculations can get very messy and unpredictable. Everything else is at cost zero if you mantain low traffic and do not build multiple images every single day.
+
+**NOTE** Try to use the [AWS Pricing Calculator](https://calculator.aws/#/) to understand for what are you going to be billed and forecast your expenses.
