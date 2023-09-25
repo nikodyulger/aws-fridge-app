@@ -33,3 +33,18 @@ The infrastructure is not the only relevant part of this project, it is also imp
 - [**Pytest**](https://docs.pytest.org/en/7.4.x/): it is used to automate testing of your code
 - [**Moto**](https://docs.getmoto.org/en/latest/): it mocks some cloud services for testing purposes
 - [**Docker**](https://docs.docker.com/): it created the containers for your app, so it can be runned everywhere
+
+
+## Deployment process
+
+The deployment of the app is done in several steps that must be followed in this order:
+
+Previous manual steps:
+- Create a [connection](https://docs.aws.amazon.com/codepipeline/latest/userguide/connections-github.html) with your GitHub. It is necessary for CodePipeline to source the code and later on build the artefacts
+- Register a [domain](https://aws.amazon.com/es/getting-started/hands-on/get-a-domain/) on Route53. Find a domain you like and pay for it, the hosted zone is created automatically for you
+
+Stack order:
+1. Serverless. Deploy all lambdas as we already know how we are going to name our service. The command to execute inside the `infrastructure/lambdas` is `serverless deploy`. For that, you need to install serverless previously on your local machine with `npm install -g serverless`
+2. `ci_cd.yml` is the first stack to deploy. Remember to introduce the already created **GitHub connection ID** as parameter. The first execution of the pipeline will fail, because the App Runner service won’t exist yet. However, an image will be build and be available at the ECR repository
+3. `app_runner` template will deploy the service and a dynamo table to which the queries are made. It takes a while, be patient. Remember it is provisioning all the infrastructure for you.
+4. Last but not least, `eventrribdge` will create the listeners for the AppRunner service with the SNS topic and subscription. Remember to confirm the subscription, if not you will not be monitoring nothign at all. Check the spam folder of your email just in case!
